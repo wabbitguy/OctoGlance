@@ -3,7 +3,7 @@
 
 **Wabbit Wanch Design © 2026**
 
-![OctoGlance Main Screen](images/main_screen.png)
+![OctoGlance Main Screen](images/OctoGlance.png)
 
 OctoGlance turns a budget ESP32 CYD into a dedicated 3D printer monitor for OctoPrint. It connects to OctoPrint over WiFi and displays real-time print status, temperatures, progress, ETA, and thumbnail previews.
 
@@ -32,8 +32,6 @@ OctoGlance turns a budget ESP32 CYD into a dedicated 3D printer monitor for Octo
 - **ESP32 CYD 2.8"** (Cheap Yellow Display) — ESP32-2432S028R or compatible
 - USB-C cable for flashing
 - OctoPrint already setup and running
-
-![CYD Hardware](images/cyd_hardware.png)
 
 ---
 
@@ -79,7 +77,7 @@ OctoGlance stores its fonts and images in the LittleFS filesystem on the CYD. Th
 
 On first boot OctoGlance will create a WiFi hotspot called **OctoGlance**. Connect to it from your phone or computer and you'll be redirected to the WiFi setup page. Enter your network credentials and OctoGlance will reboot and connect.
 
-![WiFi Setup](images/wifi_setup.png)
+![WiFi Setup](images/Wifi_Connect.png)
 
 ### 4. Get an OctoPrint Application Key
 
@@ -90,9 +88,8 @@ OctoGlance needs a key to talk to OctoPrint's API. OctoPrint has **two** places 
 | Settings → **API** ("Global API Key") | **No** — deprecated, being removed entirely in OctoPrint 1.13.0 |
 | Settings → **Application Keys** | **Yes** — use "Manually generate an application key" for a simple copy-paste key with the same workflow as the old one |
 
-![WiFi Setup](images/api.png)
+![WiFi Setup](images/Application_Key.png)
 
-Generate the key there and keep it handy for the next step.
 
 ### 5. Configure OctoGlance
 
@@ -104,7 +101,7 @@ http://octoglance.local
 
 OctoGlance has a built-in web interface accessible from any browser on your local network at `http://octoglance.local` or the IP address shown on the display.
 
-![Web UI Overview](images/webui_overview.png)
+![Web UI Overview](images/OctoGlance_Settings.png)
 
 
 
@@ -182,8 +179,14 @@ Note that without a DST rule, this hardcoded value won't automatically shift for
 
 OctoGlance works with any printer OctoPrint itself can control — it talks to OctoPrint's REST API, not to the printer directly, so compatibility is really about your OctoPrint settings.
 
-- **OctoPrint** — any reasonably current version; Application Keys (see [Quick Start](#4-get-an-octoprint-application-key)) need Settings → Application Keys to be present in your version
-- **Thumbnails** require the community **OctoPrint-PrusaSlicerThumbnails** plugin (install via OctoPrint's Plugin Manager) plus a slicer profile that embeds a GCODE thumbnail (PrusaSlicer/OrcaSlicer: enable the 16×16 or 200×200 thumbnail option). Without the plugin, OctoGlance falls back to a generic printing icon instead of a real preview
+**OctoPrint** — any reasonably current version; Application Keys (see [Quick Start](#4-get-an-octoprint-application-key)) need Settings → Application Keys to be present in your version
+
+**Thumbnails** - require the community **OctoPrint-PrusaSlicerThumbnails** plugin (install via OctoPrint's Plugin Manager) plus a slicer profile that embeds a GCODE thumbnail (PrusaSlicer/OrcaSlicer: enable the 16×16 or 200×200 thumbnail option). Without the plugin, OctoGlance falls back to a generic printing icon instead of a real preview
+
+To add thumbnails to your slicer printer profile use this web page as a reference:
+
+<https://www.obico.io/docs/user-guides/enable-gcode-thumbnails/>
+
 ---
 
 ## Troubleshooting
@@ -206,19 +209,6 @@ OctoGlance works with any printer OctoPrint itself can control — it talks to O
 **The web UI is not loading with a browser at `http://octoglance.local`**
 - Use the IP address shown on the OctoGlance display instead
 - mDNS (`.local` addresses) may not work on all networks, particularly on some Android devices
-
----
-
-## License
-
-MIT License — free to use, modify and distribute. Attribution appreciated.
-
----
-
-## Credits
-
-OctoGlance is developed by **Wabbit Wanch Design**.
-ntfy app is developed by [Philipp Heckel](https://github.com/binwiederhier/ntfy).
 
 ---
 
@@ -349,7 +339,6 @@ In the OctoGlance web UI:
 - Set **Topic** to your topic name
 - Click **Update & Save**
 
-![ntfy Self-Hosted Setup](images/ntfy_selfhosted.png)
 
 #### ntfy Troubleshooting
 
@@ -361,6 +350,18 @@ In the OctoGlance web UI:
 
 **Notifications work but are slow**
 - If using the ntfy web app (PWA) instead of the native app, notifications only arrive when the page is open. Install the native app from the App Store or Google Play.
+
+---
+## License
+
+MIT License — free to use, modify and distribute. Attribution appreciated.
+
+---
+
+## Credits
+
+OctoGlance is developed by **Wabbit Wanch Design**.
+ntfy app is developed by [Philipp Heckel](https://github.com/binwiederhier/ntfy).
 
 ---
 
