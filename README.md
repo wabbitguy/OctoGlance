@@ -1,4 +1,4 @@
-# OctoGlance v1.0
+# OctoGlance v1.1
 ### An OctoPrint 3D Printer Monitor for the ESP32 CYD 2.8" (Cheap Yellow Display)
 
 **Wabbit Wanch Design © 2026**
@@ -49,6 +49,17 @@ Install the following libraries via Arduino Library Manager:
 ---
 
 ## Quick Start
+
+## Quick Start Easy Flash
+
+### 1. Flashing can be done without any Arduino IDE usage if preferred:
+- Connect your ESP32CYD to your computers USB port
+- Select your board driver (ILI9341 or ST7789)
+- Select your language
+- Select the port the CYD is connected to
+- Flash directly to your CYD: <https://wabbitguy.github.io/OctoGlance-Install/>
+
+### --- OR ---
 
 ### 1. Flash the Firmware
 
@@ -365,4 +376,4 @@ ntfy app is developed by [Philipp Heckel](https://github.com/binwiederhier/ntfy)
 
 ---
 
-*OctoGlance v1.0 © 2026 Wabbit Wanch Design*
+*OctoGlance v1.1 © 2026 Wabbit Wanch Design*
