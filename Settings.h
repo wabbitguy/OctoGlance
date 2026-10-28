@@ -2,6 +2,19 @@
    NO OTA 2MB APP/2MB SPIFFS
 */
 
+// ── Language ───────────────────────────────────────────────
+// Uncomment ONE language only. (The ready-made .bin files on GitHub
+// choose their language when they're built, which skips this list.)
+#ifndef LANG_FROM_BUILD
+#define LANG_EN   // English  (default)
+//#define LANG_FR   // French
+//#define LANG_DE   // German
+//#define LANG_ES   // Spanish
+//#define LANG_NL   // Dutch
+//#define LANG_PT   // Portuguese
+//#define LANG_TR   // Turkish
+#endif
+
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -16,14 +29,12 @@
 #include <WebServer.h>
 #include <PNGdec.h>
 
-// Timezone offset in seconds east of UTC for the primary location.
-// -25200 = UTC-7 (PDT).  Updated automatically at 2am and on web save.
-int32_t tzOffset = -25200;
+int32_t tzOffset = -25200;// -25200 = UTC-7 (PDT).  Updated automatically at 2am and on web save.
 
 // IP information of your printer on the LAN
 String printerIP = "192.168.1.6";  // default IP, set yours via the web page
 String printerPort = "80";         // OctoPi/native default
-String apiKey = "";                // OctoPrint API key: Settings -> API in the OctoPrint web UI
+String apiKey = "";                // OctoPrint: Settings -> Application Keys
 
 // ── ntfy Push Notifications ────────────────────────────────
 bool    ntfyEnabled  = false;
@@ -34,8 +45,8 @@ String  ntfyPort     = "2586";// can be any port you want if local hosting
 
 // -- URL query information from the printer (OctoPrint REST endpoints)
 String printQuery = "/api/printer?exclude=sd,history";
-uint8_t ntfyStallMin = 5;  // was 2 — too short even with position tracking
-String printerINFO = "/api/settings";  // used to read a custom instance name (appearance.name)
+uint8_t ntfyStallMin = 5;  // stall alert after this many minutes
+String printerINFO = "/api/settings";  // printer name
 String printerJOB = "/api/job";        // progress / ETA / active file
 String printerURLQ = "";
 String printerURLInfo = "";
@@ -45,24 +56,19 @@ String thePrintFile = "";  // filename of the currently printing file
 bool show24HR = false;// show 24hr clock
 
 // ---------------- GRAPHICS (in LittleFS /data folder) ----------------
-#define OFFLINE_IMAGE "/OctoOffLine.bmp"  // 24-bit BMP, 186 x 186 - OctoPrint unreachable (not about printer state)
+#define OFFLINE_IMAGE "/OctoOffLine.bmp"  // 24-bit BMP, 186 x 186 - OctoPrint not answering
 #define IDLE_IMAGE "/Idle.bmp"          // 24-bit BMP, 110 x 110
 #define HEATING_IMAGE "/Heating.bmp"    // 24-bit BMP, 110 x 110
 #define PRINTING_IMAGE "/Printing.bmp"  // 24-bit BMP, 110 x 110
 #define SUCCESS_IMAGE "/Success.bmp"    // 24-bit BMP, 110 x 110
-#define FAILURE_IMAGE "/Failure.bmp"    // 24-bit BMP, 110 x 110 - cancelled or errored out, not a clean finish
+#define FAILURE_IMAGE "/Failure.bmp"    // 24-bit BMP, 110 x 110 - cancelled or error
 
 // ---------------- FONTS (in LittleFS /data folder) ----------------
 #define AA_FONT_SMALL "NotoSansBold15"  // 15 point sans serif bold
 #define AA_FONT_LARGE "NotoSansBold36"  // 36 point sans serif bold
 
-// maximums for bed temp and nozzle temp - gauge scale only, not a safety
-// limit. Set high enough to comfortably cover realistic CYD users (aftermarket
-// high-temp hotend swaps, 350°C-class prosumer machines, ABS/ASA beds) without
-// needing a web-UI/config option for the rare exception running true PEEK-class
-// hardware.
-uint8_t maxBedTemp = 180;
-uint16_t maxNozzleTemp = 450;
+uint8_t maxBedTemp = 180; //maximum for bed temp 
+uint16_t maxNozzleTemp = 450;//maximum for nozzle temp 
 
 // ---- setup for Klipper printers with heated chambers ----
 bool hasChamber = false;
@@ -75,43 +81,34 @@ HTTPClient httpThumb;
 uint8_t *thumbBuffer = nullptr;
 int thumbBufferSize = 0;
 
-// ---- Thumbnail scaling (see fetchAndDrawThumbnail / pngDraw in the .ino) ----
-// PrusaSlicer's thumbnail plugin defaults to 16x16 and 200x200, but it also
-// lets users configure a custom size (e.g. 300x300) - none of these match
-// this layout's original ~110x110 graphic zone, so all of them get scaled
-// to fit: small thumbnails are pixel-doubled and centered, large ones are
-// nearest-neighbor downscaled to fill the box.
-#define THUMB_BOX_SIZE 110          // matches the original KlippyMon graphic zone
-#define THUMB_UPSCALE_THRESHOLD 32  // source width/height <= this triggers upscale mode
-#define THUMB_UPSCALE_FACTOR 2      // tune after seeing real thumbnails on hardware
-#define THUMB_MAX_SRC_WIDTH 512     // safety cap for pngDraw's row buffers - comfortably
-                                    // covers any realistic custom slicer thumbnail size;
-                                    // anything wider is skipped rather than risk a buffer
-                                    // overflow in the fixed-size row buffers
-int thumbSrcW = 0, thumbSrcH = 0;        // native dimensions of the decoded PNG
-int thumbOutW = 0, thumbOutH = 0;        // dimensions actually drawn to screen
-int thumbOffsetX = 0, thumbOffsetY = 0;  // centers the result within the box
+// ---- Thumbnail scaling ----
+#define THUMB_BOX_SIZE 110          // thumbnails are scaled to fit this box
+#define THUMB_UPSCALE_THRESHOLD 32  // this size or smaller gets pixel-doubled
+#define THUMB_UPSCALE_FACTOR 2
+#define THUMB_MAX_SRC_WIDTH 512     // wider thumbnails are skipped
+int thumbSrcW = 0, thumbSrcH = 0;        // size of the PNG
+int thumbOutW = 0, thumbOutH = 0;        // size drawn on screen
+int thumbOffsetX = 0, thumbOffsetY = 0;  // centres it in the box
 bool thumbIsUpscale = false;
 int thumbLastDstRow = -1;
 
 // ---------------- WEB PAGE TEMPLATE ----------------
-// Placeholders: %IP%  %PORT%  %MBT%  %MNT%  %boxState%
 const char printer_Info[] PROGMEM = R"rawliteral(
 <form action="/updatePrinterInfo">
   <div class="field">
-    <label>Printer IP</label>
+    <label>%LBL_PRINTER_IP%</label>
     <input type="text" name="printerIP" value="%IP%">
   </div>
   <div class="field">
-    <label>Printer Port</label>
+    <label>%LBL_PRINTER_PORT%</label>
     <input type="text" name="printerPort" value="%PORT%">
   </div>
   <div class="field">
-    <label>API Key</label>
+    <label>%LBL_API_KEY%</label>
     <input type="text" name="apiKey" value="%APIKEY%">
   </div>
   <div class="field">
-    <label>24 Hour Clock</label>
+    <label>%LBL_CLOCK24%</label>
     <label class="toggle">
       <input type="checkbox" name="show24HR" %boxState%>
       <span class="slider"></span>
@@ -124,7 +121,7 @@ const char printer_Info[] PROGMEM = R"rawliteral(
 // ============================================================
 const char HTML_TEMPLATE[] PROGMEM = R"rawliteral(
 <!DOCTYPE html><html>
-<head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OctoGlance</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }

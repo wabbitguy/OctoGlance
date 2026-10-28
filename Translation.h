@@ -1,36 +1,10 @@
 // =============================================================================
-// Translation.h — OctoGlance localisation
+// Translation.h — OctoGlance languages, pick one in Settings.h
 // =============================================================================
-//
-// HOW TO USE
-// ----------
-// 1. Open Language.h and uncomment ONE language only:
-//
-//      #define LANG_EN   // English  (default)
-//      #define LANG_FR   // French
-//      #define LANG_DE   // German
-//      #define LANG_ES   // Spanish
-//      #define LANG_NL   // Dutch
-//      #define LANG_PT   // Portuguese
-//      #define LANG_TR   // Turkish
-//
-// 2. Recompile and flash. That's it!
-//
-// FONT NOTE
-// ---------
-// NotoSansBold15 / NotoSansBold36 cover the full Latin-1 Supplement block
-// (U+00C0–U+00FF), so accented characters for French, German, Spanish, Dutch,
-// and Portuguese work without regenerating fonts.
-// Turkish uses ASCII approximations to avoid characters outside Latin-1.
-//
-// GAUGE HEADING NOTE
-// ------------------
-// strNozzle, strProgress, strBed must be short — limited pixel width on
-// the 240px wide screen. strPrep must be 5 chars or fewer — confined space
-// inside the gauge arc.
-//
-// FPT (Finish Print Time) and ETA are universal — no translation needed.
-// OctoGlance stays as-is on the network regardless of language.
+// strNozzle, strProgress, strBed, strIdle, strPrep, strWifiReset (Font 2) and
+// strConnecting (Font 4): plain ASCII only, e.g. "Duese", "Progres".
+// Other screen texts (NotoSansBold15): Latin-1 plus Turkish ğ ı İ ş Ş.
+// Gauge headings short, strPrep 5 chars max.
 // =============================================================================
 
 #ifndef TRANSLATION_H
@@ -74,12 +48,17 @@ const char strTotal[]       = "Total";
 const char strHrs[]         = "hrs";
 const char strMins[]        = "mins";
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Access Point Active";
+const char strWifiReset[]  = "WiFi reset in 5 seconds";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Printer Settings";
 const char wcSecWifi[]          = "WiFi Control";
 const char wcPrinterIP[]        = "Printer IP";
 const char wcPrinterPort[]      = "Printer Port";
+const char wcApiKey[]           = "API Key";
 const char wcClock24[]          = "24 Hour Clock";
 const char wcSaveBtn[]          = "Update &amp; Save";
 const char wcWifiResetBtn[]     = "&#x26A0; Reset WiFi";
@@ -111,7 +90,7 @@ const char wcNtfyPort[]         = "Port (Local Host)";
 
 // ── Gauge headings ────────────────────────────────────────────────────────
 const char strNozzle[]      = "Buse";
-const char strProgress[]    = "Progrès";
+const char strProgress[]    = "Progres";
 const char strBed[]         = "Lit";
 
 // ── Progress gauge centre (max 5 chars) ──────────────────────────────────
@@ -133,12 +112,17 @@ const char strTotal[]       = "Total";
 const char strHrs[]         = "hrs";
 const char strMins[]        = "mins";
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Point d'accès actif";
+const char strWifiReset[]  = "Reinit. WiFi dans 5 s";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Paramètres imprimante";
 const char wcSecWifi[]          = "Contrôle WiFi";
 const char wcPrinterIP[]        = "IP imprimante";
 const char wcPrinterPort[]      = "Port imprimante";
+const char wcApiKey[]           = "Clé API";
 const char wcClock24[]          = "Horloge 24h";
 const char wcSaveBtn[]          = "Enregistrer";
 const char wcWifiResetBtn[]     = "&#x26A0; Réinitialiser WiFi";
@@ -169,7 +153,7 @@ const char wcNtfyPort[]         = "Port (Hôte local)";
 #ifdef LANG_DE
 
 // ── Gauge headings ────────────────────────────────────────────────────────
-const char strNozzle[]      = "Düse";
+const char strNozzle[]      = "Duese";
 const char strProgress[]    = "Fortsch.";   // Fortschritt truncated
 const char strBed[]         = "Bett";
 
@@ -192,12 +176,17 @@ const char strTotal[]       = "Gesamt";
 const char strHrs[]         = "Std";        // Stunden
 const char strMins[]        = "Min";        // Minuten
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Zugangspunkt aktiv";
+const char strWifiReset[]  = "WiFi-Reset in 5 Sek.";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Druckereinstellungen";
 const char wcSecWifi[]          = "WiFi-Steuerung";
 const char wcPrinterIP[]        = "Drucker IP";
 const char wcPrinterPort[]      = "Drucker Port";
+const char wcApiKey[]           = "API-Schlüssel";
 const char wcClock24[]          = "24-Stunden-Uhr";
 const char wcSaveBtn[]          = "Speichern";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi zurücksetzen";
@@ -251,12 +240,17 @@ const char strTotal[]       = "Total";
 const char strHrs[]         = "hrs";
 const char strMins[]        = "mins";
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Punto de acceso activo";
+const char strWifiReset[]  = "Reinicio WiFi en 5 s";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Configuración impresora";
 const char wcSecWifi[]          = "Control WiFi";
 const char wcPrinterIP[]        = "IP impresora";
 const char wcPrinterPort[]      = "Puerto impresora";
+const char wcApiKey[]           = "Clave API";
 const char wcClock24[]          = "Reloj de 24 horas";
 const char wcSaveBtn[]          = "Guardar";
 const char wcWifiResetBtn[]     = "&#x26A0; Restablecer WiFi";
@@ -310,12 +304,17 @@ const char strTotal[]       = "Totaal";
 const char strHrs[]         = "uur";
 const char strMins[]        = "min";
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Toegangspunt actief";
+const char strWifiReset[]  = "WiFi-reset over 5 sec.";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Printerinstellingen";
 const char wcSecWifi[]          = "WiFi-beheer";
 const char wcPrinterIP[]        = "Printer IP";
 const char wcPrinterPort[]      = "Printer poort";
+const char wcApiKey[]           = "API-sleutel";
 const char wcClock24[]          = "24-uursklok";
 const char wcSaveBtn[]          = "Opslaan";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi resetten";
@@ -369,12 +368,17 @@ const char strTotal[]       = "Total";
 const char strHrs[]         = "hrs";
 const char strMins[]        = "mins";
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Ponto de acesso ativo";
+const char strWifiReset[]  = "Reinicio WiFi em 5 s";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Configurações da impressora";
 const char wcSecWifi[]          = "Controle WiFi";
 const char wcPrinterIP[]        = "IP da impressora";
 const char wcPrinterPort[]      = "Porta da impressora";
+const char wcApiKey[]           = "Chave API";
 const char wcClock24[]          = "Relógio 24h";
 const char wcSaveBtn[]          = "Salvar";
 const char wcWifiResetBtn[]     = "&#x26A0; Redefinir WiFi";
@@ -428,12 +432,17 @@ const char strTotal[]       = "Toplam";
 const char strHrs[]         = "saat";
 const char strMins[]        = "dak";        // dakika
 
+// ── WiFi screens ──────────────────────────────────────────────────────────
+const char strAPActive[]   = "Erisim noktasi aktif";
+const char strWifiReset[]  = "WiFi 5 sn icinde sifirlanir";
+
 // ── Web UI ────────────────────────────────────────────────────────────────
 const char wcTitle[]            = "OctoGlance";
 const char wcSecPrinter[]       = "Yazici Ayarlari";
 const char wcSecWifi[]          = "WiFi Kontrolü";
 const char wcPrinterIP[]        = "Yazici IP";
 const char wcPrinterPort[]      = "Yazici Portu";
+const char wcApiKey[]           = "API Anahtari";
 const char wcClock24[]          = "24 saat formati";
 const char wcSaveBtn[]          = "Kaydet";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi Sifirla";

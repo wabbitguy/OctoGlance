@@ -2,15 +2,14 @@
    NO OTA 2MB APP/2MB SPIFFS
 */
 
-#include "Settings.h"     // some basic settings (TimeZone)
-#include "Language.h"     // language you want to use
+#include "Settings.h"     // some basic settings (language, TimeZone)
 #include "Translation.h"  // language translations
 #include "Ntfy.h"         // for push nofitications if you want them
 #include "NTP_Time.h"     // time server change
 
 //#define FORMAT_LittleFS  // Wipe LittleFS and all files! Disable after use.
 
-#define VERSION "v1.0"
+#define VERSION "v1.1"
 #define hostNameCYD "OctoGlance"
 #define CONFIG "/config.txt"
 
@@ -69,56 +68,41 @@ float savedTotalDuration = 0.0;  // save the total duration so it doesn't get no
 float toolheadX = 0, toolheadY = 0, toolheadZ = 0, toolheadE = 0;  // for checking against no printer movement
 
 // ---------------- CONNECTION STATE MACHINE ----------------
-// Sits "above" PrinterState: PrinterState (idle/prep/printing/complete) only
-// means anything once we're in CONN_READY - OctoPrint reachable AND a
-// printer connected to it via serial.
 typedef enum {
-  CONN_BOOTING,            // before the very first poll resolves - "Connecting..."
-  CONN_OCTOPRINT_OFFLINE,  // OctoPrint server unreachable (no response at all)
-  CONN_PRINTER_OFFLINE,    // OctoPrint reachable, printer not connected (serial closed)
-  CONN_READY               // OctoPrint reachable AND printer connected
+  CONN_BOOTING,            // "Connecting..." until the first poll
+  CONN_OCTOPRINT_OFFLINE,  // OctoPrint not answering
+  CONN_PRINTER_OFFLINE,    // OctoPrint up, printer not connected
+  CONN_READY               // OctoPrint up and printer connected
 } ConnState;
 
 ConnState connState = CONN_BOOTING;
 
-// fetchPrinterData()'s result - distinguishes "OctoPrint is fine, printer
-// just isn't attached" (HTTP 409 from /api/printer) from every other kind
-// of failure, so the two get different screens instead of being lumped
-// together.
-typedef enum {
+typedef enum {// fetchPrinterData() result
   FETCH_OK,
-  FETCH_PRINTER_NOT_CONNECTED,  // OctoPrint responded 409 - no printer attached
-  FETCH_UNREACHABLE             // no response, timeout, WiFi down, bad JSON, etc.
+  FETCH_PRINTER_NOT_CONNECTED,  // HTTP 409 - no printer attached
+  FETCH_UNREACHABLE             // no response, timeout, bad JSON
 } FetchResult;
 
-// Result of testOctoPrintConnection() - run once, synchronously, when the web
-// UI's settings form is saved, so a bad address and a bad API key get two
-// different, actionable messages right there in the browser instead of both
-// silently looking like "OctoPrint Offline" on the CYD later.
-typedef enum {
-  KEYTEST_OK,         // 200 - address and API key both correct
-  KEYTEST_NOT_FOUND,  // no response at all - IP/port wrong, or OctoPrint isn't running
-  KEYTEST_BAD_KEY     // got a response, but 401/403 - address is right, key is wrong
+typedef enum {// testOctoPrintConnection() result, shown when settings are saved
+  KEYTEST_OK,         // address and key OK
+  KEYTEST_NOT_FOUND,  // wrong IP/port or OctoPrint not running
+  KEYTEST_BAD_KEY     // 401/403 - wrong key
 } KeyTestResult;
 
 // ---------------- PRINTER STATE MACHINE ----------------
 typedef enum {
-  STATE_IDLE,      // standby - printer on but doing nothing
-  STATE_PREP,      // printing flag set but nozzle/bed haven't reached target temp yet (heating)
-  STATE_PRINTING,  // printDuration > 0 - actual print in progress
-  STATE_PAUSED,    // paused/pausing flag set - heat held, no progress movement
-  STATE_COMPLETE,  // just transitioned from PRINTING to IDLE at ~100% - a clean finish
-  STATE_FAILED     // stopped short of ~100% - cancelled or errored out, not a clean finish
+  STATE_IDLE,      // printer on, doing nothing
+  STATE_PREP,      // heating up
+  STATE_PRINTING,
+  STATE_PAUSED,
+  STATE_COMPLETE,  // finished at ~100%
+  STATE_FAILED     // cancelled or error
 } PrinterState;
 
 PrinterState currentState = STATE_IDLE;
 PrinterState lastState = STATE_IDLE;
 
-// Tracked independently of OctoPrint's own progress.completion, which may
-// reset the instant a job ends - this is our own last-seen value from
-// while a print was actually running, used to tell a clean finish (~100%)
-// apart from a cancel/error that never got that far.
-float lastKnownProgress = 0.0;
+float lastKnownProgress = 0.0;// last progress seen while printing
 
 bool showSleep = false;
 bool showIdle = false;
@@ -431,13 +415,7 @@ void handleGauge(uint8_t whichGauge, int16_t gaugeValue) {
 
   switch (whichGauge) {
     case nozzleGauge:
-      // Clamp to [0,1] before computing the angle - drawSmoothArc() treats a
-      // zero-length arc (theMove <= 40, the start angle) as a full-circle
-      // wrap rather than nothing, and an angle past 320 (temp reporting
-      // higher than maxNozzleTemp - possible on hotter hardware than the
-      // 350°C default) wraps the other way. Same fix as progressGauge's
-      // existing guard, just also needed here since temps aren't 0-100.
-      temp = constrain(float(gaugeValue) / maxNozzleTemp, 0.0f, 1.0f);
+      temp = constrain(float(gaugeValue) / maxNozzleTemp, 0.0f, 1.0f);// clamp or the arc wraps
       theMove = (temp * 280) + 40;
       tft.drawSmoothArc(40, gaugeY, 32, 22, 40, 320, TFT_DARKGREY, TFT_BLACK, false);
       if (theMove > 40) {
@@ -453,10 +431,7 @@ void handleGauge(uint8_t whichGauge, int16_t gaugeValue) {
       theMove = (temp * 280) + 40;
       tft.drawSmoothArc(120, gaugeY, 32, 22, 40, 320, TFT_DARKGREY, TFT_BLACK, false);
       if (theMove > 40) {
-        // Paused prints turn the arc orange instead of green - a glanceable
-        // cue on top of the PAUSE text, since otherwise this gauge looks
-        // identical to an actively-printing one.
-        uint16_t arcColor = (currentState == STATE_PAUSED) ? TFT_ORANGE : TFT_GREEN;
+        uint16_t arcColor = (currentState == STATE_PAUSED) ? TFT_ORANGE : TFT_GREEN;// orange when paused
         tft.drawSmoothArc(120, gaugeY, 32, 22, 40, theMove, arcColor, TFT_DARKGREY, false);
       }
       tft.fillCircle(120, gaugeY, 20, TFT_BLACK);
@@ -465,8 +440,7 @@ void handleGauge(uint8_t whichGauge, int16_t gaugeValue) {
       break;
 
     case bedGauge:
-      // Same clamp + guard as nozzleGauge above, for the same reason.
-      temp = constrain(float(gaugeValue) / maxBedTemp, 0.0f, 1.0f);
+      temp = constrain(float(gaugeValue) / maxBedTemp, 0.0f, 1.0f);// clamp or the arc wraps
       theMove = (temp * 280) + 40;
       tft.drawSmoothArc(200, gaugeY, 32, 22, 40, 320, TFT_DARKGREY, TFT_BLACK, false);
       if (theMove > 40) {
@@ -511,7 +485,7 @@ void handlePrinterOffLine() {
       tft.loadFont(AA_FONT_SMALL, LittleFS);
       tft.setTextColor(TFT_ORANGE, TFT_BLACK);
       tft.setTextDatum(BC_DATUM);
-      tft.drawString(strOctoOffline, 120, 260);  // gap between the graphic (ends ~234) and the IP line
+      tft.drawString(strOctoOffline, 120, 260);  // between graphic and IP line
       tft.unloadFont();
       String ipaddress = "OctoGlance " + WiFi.localIP().toString();
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -521,12 +495,7 @@ void handlePrinterOffLine() {
       showSleep = true;
     }
   } else {
-    // OctoPrint just answered (first time, or coming back from being
-    // offline) - hand off to handlePrinterStatus() so it can tell whether a
-    // printer is actually attached before anything gets drawn. Don't draw
-    // headings/labels here pre-emptively; that was the source of the old
-    // "Nozzle/Progress/Bed with no data" flash.
-    handlePrinterStatus();
+    handlePrinterStatus();// OctoPrint answered, let it decide what to draw
   }
 }
 
@@ -577,9 +546,7 @@ void handleHostName() {
       DeserializationError error = deserializeJson(doc, payload);
       if (!error) {
         String customName = doc["appearance"]["name"] | "";
-        // OctoPrint has no required "hostname" like Moonraker does — fall back
-        // to a generic label if the user never set one under Settings > Appearance.
-        printerName = (customName != "") ? customName : "OctoPrint";
+        printerName = (customName != "") ? customName : "OctoPrint";// name from Settings > Appearance
         Serial.println(printerName);
       }
     } else {
@@ -602,12 +569,8 @@ void handleHostName() {
 KeyTestResult testOctoPrintConnection() {
   if (WiFi.status() != WL_CONNECTED) return KEYTEST_NOT_FOUND;
 
-  // /api/settings doesn't care whether a printer is connected - just
-  // whether OctoPrint itself answers and the key is accepted. That makes
-  // it the right endpoint to isolate "address wrong" from "key wrong",
-  // uncomplicated by the 409-for-no-printer case /api/printer would add.
   HTTPClient http;
-  beginHTTP(http, printerURLInfo);
+  beginHTTP(http, printerURLInfo);// /api/settings works with no printer connected
   int httpCode = http.GET();
   http.end();
 
@@ -634,11 +597,7 @@ FetchResult fetchPrinterData() {
   if (httpCode != 200) {
     http.end();
     setRGB(0, greenOFF, 0);
-    // OctoPrint returns 409 Conflict from /api/printer specifically when
-    // it's up but has no printer connected via serial - everything else
-    // (timeout, connection refused, 5xx, etc.) means OctoPrint itself is
-    // the thing that's unreachable.
-    return (httpCode == 409) ? FETCH_PRINTER_NOT_CONNECTED : FETCH_UNREACHABLE;
+    return (httpCode == 409) ? FETCH_PRINTER_NOT_CONNECTED : FETCH_UNREACHABLE;// 409 = no printer connected
   }
 
   String payload = http.getString();
@@ -664,39 +623,23 @@ FetchResult fetchPrinterData() {
   bedTemp      = doc["temperature"]["bed"]["actual"]   | 0.0;
   bedTarget    = doc["temperature"]["bed"]["target"]   | 0.0;
 
-  // Normalize OctoPrint's boolean flags down to the same vocabulary
-  // determinePrinterState() already expects from the Klipper days.
-  //
-  // Unlike Moonraker's print_duration (which genuinely stays at 0 through
-  // homing/leveling/heating), OctoPrint's /api/job progress.printTime starts
-  // counting the instant the job begins - which includes the heating
-  // commands at the top of the gcode. So printDuration==0 never holds long
-  // enough to catch the heating phase here. OctoPrint has no "still heating"
-  // flag at all, so we infer it ourselves by comparing current temps to
-  // their targets while flagPrinting is set.
-  bool stillHeating = flagPrinting &&
+  bool stillHeating = flagPrinting &&// printing but not up to temp yet
                        ((nozzleTarget > 0 && nozzleTemp < nozzleTarget - 3) ||
                         (bedTarget > 0 && bedTemp < bedTarget - 3));
 
-  if (flagError) {
+  if (flagError) {// OctoPrint flags -> printState
     printState = "error";
   } else if (flagCancelling) {
     printState = "cancelled";
   } else if (flagPaused || flagPausing) {
-    // Heat's still held, progress just isn't moving - distinct from both
-    // "printing" and "standby" so it doesn't get mistaken for the print
-    // having finished.
     printState = "paused";
   } else if (flagPrinting) {
     printState = stillHeating ? "heating" : "printing";
   } else {
-    printState = "standby";  // operational-idle, offline, or closed — treat as idle
+    printState = "standby";  // idle, offline or closed
   }
 
-  // OctoPrint's REST API doesn't expose live toolhead XYZE position the way
-  // Moonraker does, so stall detection below falls back to progress-percentage
-  // only — same as the original (position-less) printer-monitor project.
-  toolheadX = toolheadY = toolheadZ = toolheadE = 0.0;
+  toolheadX = toolheadY = toolheadZ = toolheadE = 0.0;// OctoPrint doesn't report position
 
   // ---- GET /api/job : progress, ETA, active file ----
   beginHTTP(http, printerURLJob);
@@ -720,7 +663,7 @@ FetchResult fetchPrinterData() {
   float completion = jobDoc["progress"]["completion"] | 0.0;  // already 0-100
   progress = completion / 100.0;
   printDuration = jobDoc["progress"]["printTime"] | 0.0;
-  totalDuration = printDuration;  // OctoPrint has no separate "including pauses" field
+  totalDuration = printDuration;
   if (totalDuration > 0) savedTotalDuration = totalDuration;
 
   if (thePrintFile == "" && printState == "printing") {
@@ -772,9 +715,6 @@ void handlePrintFailed() {
 
   tft.loadFont(AA_FONT_SMALL, LittleFS);
   tft.setTextDatum(BC_DATUM);
-  // Deliberately no elapsed/failed-at time here - whoever cancelled the
-  // print already knows how far it got; the number that mattered for a
-  // clean finish (total time) doesn't mean anything for one that didn't.
   tft.setTextColor(TFT_RED, TFT_BLACK);
   tft.drawString(strPrintFailed, 120, endTimeY);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
@@ -813,11 +753,7 @@ void handleETA() {
   }
   char timeLeft[24];
   uint16_t pct = uint16_t(progress * 100);
-  // Was gated on `pct > lastProgress`, but updatePrinterDisplay() (called
-  // just before this, in handlePrinterStatus()) already syncs lastProgress
-  // to pct every time progress changes — so that comparison was always
-  // false and the ETA line never drew. Tracked separately here instead.
-  if (pct > lastETAProgress || !etaShownForThisPrint) {
+  if (pct > lastETAProgress || !etaShownForThisPrint) {// own tracker, not lastProgress
     lastETAProgress = pct;
     etaShownForThisPrint = true;
     estimateTimeRemaining(printDuration, pct, timeLeft);
@@ -883,10 +819,7 @@ void handleETA() {
 PrinterState determinePrinterState() {
   lastState = currentState;
 
-  // Cancelled or error, if we actually catch the flag: a definite failure,
-  // whatever the progress was. Note: Creality K1/K1 Max reports "cancelled"
-  // (British spelling), while standard Klipper/Moonraker reports "canceled".
-  if (printState == "canceled" || printState == "cancelled" || printState == "error") {
+  if (printState == "canceled" || printState == "cancelled" || printState == "error") {// both spellings
     return STATE_FAILED;
   }
 
@@ -895,25 +828,16 @@ PrinterState determinePrinterState() {
   }
 
   if (printState == "standby") {
-    if (lastState == STATE_PRINTING || lastState == STATE_PREP || lastState == STATE_PAUSED) {
-      // OctoPrint's "cancelling" flag above is only true for a brief
-      // transitional moment - easy to miss entirely at a 10s poll interval,
-      // landing straight here on "operational, not printing" with no
-      // memory that a cancel ever happened. That looks identical to a
-      // clean finish unless we cross-check: anything that stopped short of
-      // ~99% progress didn't really finish, whatever caused it.
-      uint16_t lastPct = (uint16_t)(lastKnownProgress * 100.0);
-      return (lastPct >= 99) ? STATE_COMPLETE : STATE_FAILED;
+    if (lastState == STATE_PRINTING || lastState == STATE_PREP || lastState == STATE_PAUSED) {// print just stopped
+      float endProgress = max(lastKnownProgress, progress);// also use OctoPrint's own %
+      uint16_t lastPct = (uint16_t)(endProgress * 100.0);
+      return (lastPct >= 99) ? STATE_COMPLETE : STATE_FAILED;// under 99% = cancelled
     }
     return STATE_IDLE;
   }
 
   if (printState == "heating") {
-    // Once real printing has actually started this job, don't drop back to
-    // the heating screen over a brief mid-print temp dip (PID oscillation,
-    // a scripted temp change, etc.) - only trust "heating" before we've
-    // ever reached STATE_PRINTING for this print.
-    return (lastState == STATE_PRINTING) ? STATE_PRINTING : STATE_PREP;
+    return (lastState == STATE_PRINTING) ? STATE_PRINTING : STATE_PREP;// ignore mid-print temp dips
   }
 
   return STATE_PRINTING;  // printState == "printing"
@@ -943,11 +867,7 @@ void updatePrinterDisplay(PrinterState state) {
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       tft.drawString(strIdle, 120, dataY, 2);
 
-      // Safety net for reaching IDLE without passing through COMPLETE or
-      // FAILED first (both of which already clear these themselves) - clear
-      // the tracked filename so the next print picks up its own name, and
-      // force the idle graphic to redraw.
-      if (lastState == STATE_PRINTING || lastState == STATE_PREP || lastState == STATE_PAUSED || lastState == STATE_FAILED) {
+      if (lastState == STATE_PRINTING || lastState == STATE_PREP || lastState == STATE_PAUSED || lastState == STATE_FAILED) {// clear old filename, redraw idle
         thePrintFile = "";
         thePrintFileRaw = "";
         showIdle = false;
@@ -962,11 +882,7 @@ void updatePrinterDisplay(PrinterState state) {
       break;
 
     case STATE_PREP:
-      // showIdle is shared across IDLE/PREP/PRINTING as a "has this state's
-      // graphic been drawn yet" flag. Arriving here fresh from STATE_IDLE
-      // leaves it true (IDLE just set it after drawing Idle.bmp), so without
-      // this reset the heating graphic below never draws on a fresh entry.
-      if (lastState != STATE_PREP) showIdle = false;
+      if (lastState != STATE_PREP) showIdle = false;// so the heating graphic draws
       tft.drawSmoothArc(120, gaugeY, 32, 22, 40, 320, TFT_DARKGREY, TFT_BLACK, false);
       tft.fillCircle(120, gaugeY, 20, TFT_BLACK);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -997,11 +913,11 @@ void updatePrinterDisplay(PrinterState state) {
         tft.fillRect(0, filenameY - 14, 239, 16, TFT_BLACK);  // clear filename line
         tft.drawString(thePrintFile, 120, filenameY);
         tft.unloadFont();
-        handleGauge(progressGauge, 0);  // ← start at 0% immediately
-        lastProgress = 0;               // ← force redraw on first real progress
-        lastKnownProgress = 0.0;        // ← don't let a previous print's finish leak into this one
+        handleGauge(progressGauge, 0);  // start at 0%
+        lastProgress = 0;
+        lastKnownProgress = 0.0;        // reset for the new print
         lastETAProgress = 0;
-        etaShownForThisPrint = false;   // force the ETA line to draw at least once
+        etaShownForThisPrint = false;   // draw ETA at least once
       }
 
       progressPercent = uint16_t(progress * 100.0);
@@ -1009,8 +925,8 @@ void updatePrinterDisplay(PrinterState state) {
         lastProgress = progressPercent;
         handleGauge(progressGauge, lastProgress);
       }
-      lastKnownProgress = progress;  // our own record, used to tell a clean finish from a cancel/error later
-     ntfyCheckStall(progress, toolheadX, toolheadY, toolheadZ, toolheadE);  // was progressPercent
+      lastKnownProgress = progress;
+     ntfyCheckStall(progress, toolheadX, toolheadY, toolheadZ, toolheadE);
 
       // ── Chamber temp ──────────────────────────────────────
       if (hasChamber) {
@@ -1026,21 +942,15 @@ void updatePrinterDisplay(PrinterState state) {
       break;
 
     case STATE_PAUSED:
-      // Intentionally paused - heat's held, progress just isn't moving.
-      // Leave whatever's already on screen (thumbnail/Printing.bmp) and the
-      // percentage text alone - only the arc goes orange (in handleGauge()
-      // above). "Printer Paused" takes over the ETA/FPT line instead, which
-      // is otherwise meaningless while paused and would just sit there
-      // showing a stale, frozen estimate.
       progressPercent = uint16_t(progress * 100.0);
-      handleGauge(progressGauge, progressPercent);
+      handleGauge(progressGauge, progressPercent);// arc turns orange
       tft.loadFont(AA_FONT_SMALL, LittleFS);
       tft.setTextColor(TFT_ORANGE, TFT_BLACK);
       tft.setTextDatum(BC_DATUM);
       tft.fillRect(0, endTimeY - 16, 239, 18, TFT_BLACK);
-      tft.drawString(strPrinterPaused, 120, endTimeY);
+      tft.drawString(strPrinterPaused, 120, endTimeY);// replaces the ETA line
       tft.unloadFont();
-      activeETA = false;  // remaining time is meaningless while paused
+      activeETA = false;
       break;
 
     case STATE_COMPLETE:
@@ -1084,25 +994,16 @@ void handlePrinterStatus() {
     failCount++;
     Serial.println("fetchPrinterData failed - count: " + String(failCount));
 
-    if (failCount >= 3) {  // 3 consecutive failures (~30 seconds) before giving up
+    if (failCount >= 3) {  // 3 failures in a row (~30 s)
       failCount = 0;
 
       if (result == FETCH_PRINTER_NOT_CONNECTED) {
-        // OctoPrint is fine, it just has no printer attached. Draw the
-        // screen once on the transition, then go quiet: handlePolling()
-        // keeps retrying every thePollTime seconds in the background, and
-        // this whole block only fires again once failCount rebuilds to 3 -
-        // at which point the connState check below skips the redraw as
-        // long as we're still in the same state. No flicker between polls.
-        if (connState != CONN_PRINTER_OFFLINE) {
+        if (connState != CONN_PRINTER_OFFLINE) {// draw once, no flicker
           connState = CONN_PRINTER_OFFLINE;
           drawPrinterOffline();
         }
       } else {
-        // FETCH_UNREACHABLE: OctoPrint itself has gone away, not just the
-        // printer. Fall all the way back so loop() re-verifies from
-        // scratch via handleHostName() next polling cycle.
-        connState = CONN_OCTOPRINT_OFFLINE;
+        connState = CONN_OCTOPRINT_OFFLINE;// OctoPrint gone, start over via handleHostName()
         printerName = "";
         showSleep = false;
         showIdle = false;
@@ -1113,9 +1014,7 @@ void handlePrinterStatus() {
 
   failCount = 0;  // reset on success
 
-  if (connState != CONN_READY) {
-    // Coming back from Connecting/Offline - redraw the name and gauge
-    // headings once before per-state drawing takes over below.
+  if (connState != CONN_READY) {// back online, redraw name and headings
     connState = CONN_READY;
     tft.fillRect(0, belowClockY, 239, SCREEN_H - belowClockY, TFT_BLACK);
     tft.loadFont(AA_FONT_SMALL, LittleFS);
@@ -1127,12 +1026,7 @@ void handlePrinterStatus() {
     drawVersionString();
     showIdle = false;
     showSleep = false;
-    // A print that completed or failed earlier this boot (before OctoPrint
-    // or the printer went offline) can leave justFinished stuck true - that
-    // silently blocks STATE_IDLE's graphic draw below (!showIdle &&
-    // !justFinished) even though showIdle itself is correctly reset above,
-    // with only the gauges/heading/"Idle" text drawing and no bitmap.
-    justFinished = false;
+    justFinished = false;// or the idle graphic never draws
     lastNozzleTemp = lastBedTemp = lastProgress = 9999;  // force gauge redraw
   }
 
@@ -1151,7 +1045,7 @@ void configModeCallback(WiFiManager *myWiFiManager) {
   tft.drawString(String(hostNameCYD), SCREEN_W / 2, SCREEN_H / 2, 4);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.loadFont(AA_FONT_SMALL, LittleFS);
-  tft.drawString("Access Point Active", SCREEN_W / 2, (SCREEN_H / 2) + 36, 2);
+  tft.drawString(strAPActive, SCREEN_W / 2, (SCREEN_H / 2) + 36, 2);
   tft.unloadFont();
   delay(2000);
 }
@@ -1180,11 +1074,7 @@ String SendHTML(String saveBanner) {
   page.replace("%VERSION%", String(VERSION));
   page.replace("%WIFI_QUALITY%", String(getWifiQuality()));
 
-  // Save-result banner - empty string means nothing renders (a normal page
-  // load, not just-saved). Built by the caller from a KeyTestResult so the
-  // wording/color lives here in one place rather than duplicated at each
-  // call site.
-  page.replace("%SAVE_BANNER%", saveBanner);
+  page.replace("%SAVE_BANNER%", saveBanner);// empty unless just saved
 
   // WiFi reset modal
   page.replace("%WIFI_RESET_TITLE%", String(wcWifiResetTitle));
@@ -1223,10 +1113,7 @@ String SendHTML(String saveBanner) {
   return page;
 }
 
-// Builds the small colored banner shown just below the header after a
-// settings save - green "saved" on success, red with a specific reason on
-// failure, so a bad address and a bad API key don't look identical.
-String buildSaveBanner(KeyTestResult result) {
+String buildSaveBanner(KeyTestResult result) {// green "saved" or red reason after a save
   String cssClass, text;
   switch (result) {
     case KEYTEST_OK:
@@ -1302,16 +1189,16 @@ void handlePrinterUpdate() {
   forcePoll = true;
   buildPrinterURLs();
 
-  // Test the just-saved address + key right now, synchronously, so the
-  // person gets an immediate, specific answer in the browser rather than
-  // waiting to see which offline screen shows up on the CYD later - and so
-  // "wrong IP/port" and "wrong key" don't look identical.
-  KeyTestResult testResult = testOctoPrintConnection();
+  KeyTestResult testResult = testOctoPrintConnection();// test the new address and key now
   server.send(200, "text/html", SendHTML(buildSaveBanner(testResult)));
 }
 
 String getPrinterSetup() {
   String printerForm = String(printer_Info);
+  printerForm.replace("%LBL_PRINTER_IP%", String(wcPrinterIP));
+  printerForm.replace("%LBL_PRINTER_PORT%", String(wcPrinterPort));
+  printerForm.replace("%LBL_API_KEY%", String(wcApiKey));
+  printerForm.replace("%LBL_CLOCK24%", String(wcClock24));
   printerForm.replace("%IP%", printerIP);
   printerForm.replace("%PORT%", printerPort);
   printerForm.replace("%APIKEY%", apiKey);
@@ -1489,7 +1376,7 @@ void handleWifiReset() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextDatum(TC_DATUM);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.drawString("WiFi reset in 5 seconds", SCREEN_W / 2, SCREEN_H / 2, 2);
+  tft.drawString(strWifiReset, SCREEN_W / 2, SCREEN_H / 2, 2);
   delay(5000);
   redirectHome();
   delay(1000);
@@ -1507,24 +1394,12 @@ void redirectHome() {
   server.client().stop();
 }
 
-// Called by PNGdec for each decoded source row. thumbIsUpscale/thumbOutW/
-// thumbOutH/thumbOffsetX/thumbOffsetY are set in fetchAndDrawThumbnail()
-// right after the PNG header is opened, based on its actual dimensions —
-// handles PrusaSlicer's thumbnail plugin defaults (16x16 and 200x200) plus
-// any custom size a user configures, by scaling each to fit the original
-// ~110x110 graphic zone. srcLine must be at least THUMB_MAX_SRC_WIDTH wide
-// since it holds one full decoded source row — fetchAndDrawThumbnail()
-// checks thumbSrcW against that cap before decoding starts, so a wider
-// source never actually reaches this function.
-int pngDraw(PNGDRAW *pDraw) {
+int pngDraw(PNGDRAW *pDraw) {// PNGdec callback, one row at a time, scaled to fit the box
   static uint16_t srcLine[THUMB_MAX_SRC_WIDTH];
   static uint16_t outLine[THUMB_MAX_SRC_WIDTH];
   png.getLineAsRGB565(pDraw, srcLine, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
 
-  if (thumbIsUpscale) {
-    // Small source (e.g. 16x16): replicate each pixel horizontally, and
-    // each row vertically, by a fixed factor instead of blowing it up to
-    // fill the whole box (which would look overly blocky).
+  if (thumbIsUpscale) {// small thumbnail, pixel-doubled
     for (int x = 0; x < thumbSrcW; x++) {
       for (int rep = 0; rep < THUMB_UPSCALE_FACTOR; rep++) {
         outLine[x * THUMB_UPSCALE_FACTOR + rep] = srcLine[x];
@@ -1534,12 +1409,9 @@ int pngDraw(PNGDRAW *pDraw) {
     for (int rep = 0; rep < THUMB_UPSCALE_FACTOR; rep++) {
       tft.pushImage(graphicX + thumbOffsetX, baseY + rep, thumbOutW, 1, outLine);
     }
-  } else {
-    // Large (or exactly-fitting) source: nearest-neighbor scale down to
-    // fill THUMB_BOX_SIZE. Skip source rows that map to a destination row
-    // already drawn.
+  } else {// large thumbnail, scaled down
     int dstY = (pDraw->y * thumbOutH) / thumbSrcH;
-    if (dstY == thumbLastDstRow) return 1;
+    if (dstY == thumbLastDstRow) return 1;// row already drawn
     thumbLastDstRow = dstY;
 
     for (int dx = 0; dx < thumbOutW; dx++) {
@@ -1567,9 +1439,7 @@ bool fetchAndDrawThumbnail() {
   encodedFile.replace("&", "%26");
   encodedFile.replace("+", "%2B");
 
-  // OctoPrint-PrusaSlicerThumbnails plugin serves the embedded slicer
-  // thumbnail at this path, named after the gcode file's own basename.
-  String thumbURL = "http://" + printerIP + ":" + printerPort + "/plugin/prusaslicerthumbnails/thumbnail/" + encodedFile + ".png";
+  String thumbURL = "http://" + printerIP + ":" + printerPort + "/plugin/prusaslicerthumbnails/thumbnail/" + encodedFile + ".png";// Slicer Thumbnails plugin
 
   httpThumb.begin(thumbURL);
   httpThumb.addHeader("X-Api-Key", apiKey);
@@ -1612,11 +1482,7 @@ bool fetchAndDrawThumbnail() {
     thumbSrcH = png.getHeight();
     thumbLastDstRow = -1;
 
-    if (thumbSrcW > THUMB_MAX_SRC_WIDTH) {
-      // Wider than our row buffers can safely hold — bail out instead of
-      // overflowing srcLine/outLine in pngDraw(). Shouldn't happen with any
-      // realistic thumbnail size, but a user-configured custom size in the
-      // slicer's thumbnail plugin could in theory exceed this.
+    if (thumbSrcW > THUMB_MAX_SRC_WIDTH) {// too wide for the row buffers
       Serial.println("Thumbnail too wide (" + String(thumbSrcW) + "px, max " + String(THUMB_MAX_SRC_WIDTH) + "px), skipping");
       png.close();
       free(thumbBuffer);
@@ -1624,13 +1490,11 @@ bool fetchAndDrawThumbnail() {
       return false;
     }
 
-    if (thumbSrcW <= THUMB_UPSCALE_THRESHOLD) {
-      // e.g. the plugin's 16x16 option
+    if (thumbSrcW <= THUMB_UPSCALE_THRESHOLD) {// e.g. 16x16
       thumbIsUpscale = true;
       thumbOutW = thumbSrcW * THUMB_UPSCALE_FACTOR;
       thumbOutH = thumbSrcH * THUMB_UPSCALE_FACTOR;
-    } else {
-      // e.g. the plugin's 200x200 option (or anything else larger than the box)
+    } else {// e.g. 200x200
       thumbIsUpscale = false;
       thumbOutW = THUMB_BOX_SIZE;
       thumbOutH = THUMB_BOX_SIZE;

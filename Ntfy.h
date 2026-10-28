@@ -2,19 +2,14 @@
 #include <HTTPClient.h>
 
 // ── ntfy Notification Support ─────────────────────────────
-// Configured at runtime via the OctoGlance web UI
-// Variables defined in Settings.h:
-//   ntfyEnabled, ntfyServer, ntfyTopic, ntfyToken, ntfyStallMin
+// Set up on the web page, variables are in Settings.h
 
 static uint32_t ntfyLastProgressTime = 0;
 static float    ntfyLastProgress     = 0.0f;
 static bool     ntfyStallFired       = false;
 static bool     ntfyDoneFired        = false;
 
-// Toolhead position baseline — used alongside progress% so a plateau in
-// display_status.progress (which is byte-position based when no M73 is
-// present, and not time-linear) doesn't get misread as a real stall.
-static bool  ntfyHavePos = false;
+static bool  ntfyHavePos = false;// last toolhead position
 static float ntfyLastX = 0.0f, ntfyLastY = 0.0f, ntfyLastZ = 0.0f, ntfyLastE = 0.0f;
 
 void ntfySend(const char* message, const char* title, const char* priority) {
@@ -33,14 +28,7 @@ void ntfySend(const char* message, const char* title, const char* priority) {
   http.end();
 }
 
-// currentProgress: display_status.progress (0.0–1.0)
-// x,y,z,e: toolhead.position — real motion, sampled every poll.
-// A stall is only declared when BOTH progress% and toolhead position have
-// been flat for ntfyStallMin minutes. Progress alone plateaus on long/complex
-// prints even while the printer is genuinely moving, which caused false
-// "no progress" alerts on long prints; toolhead position catches real motion
-// that the file-position-based progress metric misses.
-void ntfyCheckStall(float currentProgress, float x, float y, float z, float e) {
+void ntfyCheckStall(float currentProgress, float x, float y, float z, float e) {// stall = no progress or motion for ntfyStallMin
   bool progressMoved = currentProgress > ntfyLastProgress + 0.001f;
   bool positionMoved = !ntfyHavePos ||
                         fabs(x - ntfyLastX) > 0.005f ||
@@ -70,8 +58,7 @@ void ntfyCheckStall(float currentProgress, float x, float y, float z, float e) {
 void ntfyPrintComplete(const String& rawPath, float totalSecs) {
   if (ntfyDoneFired) return;
 
-  // Strip path and extension for clean display name
-  String filename = rawPath;
+  String filename = rawPath;// strip path and extension
   int slashIdx = filename.lastIndexOf('/');
   if (slashIdx >= 0) filename = filename.substring(slashIdx + 1);
   int dotIdx = filename.lastIndexOf('.');
