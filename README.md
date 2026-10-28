@@ -54,7 +54,7 @@ Install the following libraries via Arduino Library Manager:
 
 1. Open the project in Arduino IDE 2.3.10
 2. Select your board: **ESP32 Dev Module** NO OTA (2MB APP/2MB SPIFFS)
-3. Set the language in `Language.h` (default is English — see [Language Settings](#language-settings))
+3. Set the language in `Settings.h` (default is English)
 4. Compile and upload to the CYD
 
 ### 2. Upload the Data Folder (Fonts and Images)
@@ -145,7 +145,7 @@ Once a printer is actually connected, OctoGlance shows one of:
 
 ## Language Settings
 
-Open `Language.h` and uncomment the language you want. Only one language can be active at a time.
+Open `Settings.h` and uncomment the language you want. Only one language can be active at a time.
 
 ```cpp
 #define LANG_EN   // English  (default)
