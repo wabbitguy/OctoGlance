@@ -61,7 +61,7 @@ Install the following libraries via Arduino Library Manager:
 
 ### --- OR ---
 
-### 1. Flash the Firmware
+### Arduino IDE
 
 1. Open the project in Arduino IDE 2.3.10
 2. Select your board: **ESP32 Dev Module** NO OTA (2MB APP/2MB SPIFFS)
