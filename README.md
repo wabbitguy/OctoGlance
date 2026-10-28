@@ -48,8 +48,6 @@ Install the following libraries via Arduino Library Manager:
 
 ---
 
-## Quick Start
-
 ## Quick Start Easy Flash
 
 ### 1. Flashing can be done without any Arduino IDE usage if preferred:
