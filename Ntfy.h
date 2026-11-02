@@ -12,19 +12,38 @@ static bool     ntfyDoneFired        = false;
 static bool  ntfyHavePos = false;// last toolhead position
 static float ntfyLastX = 0.0f, ntfyLastY = 0.0f, ntfyLastZ = 0.0f, ntfyLastE = 0.0f;
 
+// ntfySend() queues, netTask posts with ntfyPost()
+struct NtfyMsg {
+  char url[128];
+  char token[48];
+  char title[32];
+  char priority[10];
+  char message[128];
+};
+QueueHandle_t ntfyQueue = nullptr;
+
 void ntfySend(const char* message, const char* title, const char* priority) {
-  if (!ntfyEnabled) return;
+  if (!ntfyEnabled || !ntfyQueue) return;
+  NtfyMsg m;
+  snprintf(m.url, sizeof(m.url), "%s/%s", ntfyServer.c_str(), ntfyTopic.c_str());
+  strlcpy(m.token,    ntfyToken.c_str(), sizeof(m.token));
+  strlcpy(m.title,    title,             sizeof(m.title));
+  strlcpy(m.priority, priority,          sizeof(m.priority));
+  strlcpy(m.message,  message,           sizeof(m.message));
+  xQueueSend(ntfyQueue, &m, 0);
+}
+
+void ntfyPost(const NtfyMsg& m) {
   if (WiFi.status() != WL_CONNECTED) return;
   HTTPClient http;
-  String url = ntfyServer + "/" + ntfyTopic;
-  http.begin(url);
-  http.addHeader("Title",        title);
-  http.addHeader("Priority",     priority);
+  http.begin(m.url);
+  http.addHeader("Title",        m.title);
+  http.addHeader("Priority",     m.priority);
   http.addHeader("Content-Type", "text/plain");
-  if (ntfyToken != "") {
-    http.addHeader("Authorization", "Bearer " + ntfyToken);
+  if (m.token[0] != '\0') {
+    http.addHeader("Authorization", "Bearer " + String(m.token));
   }
-  http.POST(message);
+  http.POST(m.message);
   http.end();
 }
 

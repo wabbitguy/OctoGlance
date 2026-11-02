@@ -20,7 +20,7 @@ uint32_t nextSendTime = 0;
 uint32_t no_packet_count = 0;
 
 inline time_t toLocal(time_t utcTime) {
-  return utcTime + tzOffset;
+  return utcTime + (tzOverride ? tzOverrideOffset : tzOffset);  // override box wins
 }
 
 int32_t fetchTZOffsetByIP(int32_t currentOffset) {

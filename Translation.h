@@ -60,6 +60,8 @@ const char wcPrinterIP[]        = "Printer IP";
 const char wcPrinterPort[]      = "Printer Port";
 const char wcApiKey[]           = "API Key";
 const char wcClock24[]          = "24 Hour Clock";
+const char wcInvert[]           = "Invert colours";
+const char wcInvertHint[]       = "Colour inversion correction";
 const char wcSaveBtn[]          = "Update &amp; Save";
 const char wcWifiResetBtn[]     = "&#x26A0; Reset WiFi";
 const char wcWifiResetTitle[]   = "&#x26A0; Reset WiFi?";
@@ -68,7 +70,8 @@ const char wcWifiResetYes[]     = "Yes, reset";
 const char wcWifiResetCancel[]  = "Cancel";
 const char wcWifiResetting[]    = "Resetting WiFi...";
 const char wcWifiResetHotspot[] = "Rebooting. Connect to the <strong>OctoGlance</strong> hotspot.";
-const char wcSaved[]            = "&#10003; Settings saved and applied.";
+const char wcSaved[]            = "&#10003; Settings updated and saved.";  // popup after Update
+const char wcOkBtn[]            = "OK";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; OctoPrint not found at that address - check the IP and port.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint was found, but the API key was rejected - check Settings &rarr; Application Keys.";
 
@@ -80,6 +83,10 @@ const char wcNtfyTopic[]        = "Topic";
 const char wcNtfyToken[]        = "Token (optional)";
 const char wcNtfyStallMin[]     = "Stall Timeout (minutes)";
 const char wcNtfyPort[]         = "Port (Local Host)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Time Zone Override";
+const char wcTzReceived[]       = "Received";  // as in "Received: UTC−8"
 
 #endif // LANG_EN
 
@@ -124,6 +131,8 @@ const char wcPrinterIP[]        = "IP imprimante";
 const char wcPrinterPort[]      = "Port imprimante";
 const char wcApiKey[]           = "Clé API";
 const char wcClock24[]          = "Horloge 24h";
+const char wcInvert[]           = "Inverser les couleurs";
+const char wcInvertHint[]       = "Correction de l'inversion des couleurs";
 const char wcSaveBtn[]          = "Enregistrer";
 const char wcWifiResetBtn[]     = "&#x26A0; Réinitialiser WiFi";
 const char wcWifiResetTitle[]   = "&#x26A0; Réinitialiser WiFi ?";
@@ -132,7 +141,8 @@ const char wcWifiResetYes[]     = "Oui, réinitialiser";
 const char wcWifiResetCancel[]  = "Annuler";
 const char wcWifiResetting[]    = "Réinitialisation WiFi...";
 const char wcWifiResetHotspot[] = "Redémarrage. Connectez-vous au hotspot <strong>OctoGlance</strong>.";
-const char wcSaved[]            = "&#10003; Paramètres enregistrés.";
+const char wcSaved[]            = "&#10003; Paramètres mis à jour et enregistrés.";  // popup after Update
+const char wcOkBtn[]            = "OK";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; OctoPrint introuvable à cette adresse - vérifiez l'IP et le port.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint trouvé, mais la clé API a été rejetée - voir Paramètres &rarr; Clés d'application.";
 
@@ -144,6 +154,10 @@ const char wcNtfyTopic[]        = "Sujet";
 const char wcNtfyToken[]        = "Jeton (optionnel)";
 const char wcNtfyStallMin[]     = "Délai de blocage (minutes)";
 const char wcNtfyPort[]         = "Port (Hôte local)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Fuseau horaire manuel";
+const char wcTzReceived[]       = "Reçu";  // as in "Received: UTC−8"
 
 #endif // LANG_FR
 
@@ -188,6 +202,8 @@ const char wcPrinterIP[]        = "Drucker IP";
 const char wcPrinterPort[]      = "Drucker Port";
 const char wcApiKey[]           = "API-Schlüssel";
 const char wcClock24[]          = "24-Stunden-Uhr";
+const char wcInvert[]           = "Farben invertieren";
+const char wcInvertHint[]       = "Korrektur der Farbumkehrung";
 const char wcSaveBtn[]          = "Speichern";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi zurücksetzen";
 const char wcWifiResetTitle[]   = "&#x26A0; WiFi zurücksetzen?";
@@ -196,7 +212,8 @@ const char wcWifiResetYes[]     = "Ja, zurücksetzen";
 const char wcWifiResetCancel[]  = "Abbrechen";
 const char wcWifiResetting[]    = "WiFi wird zurückgesetzt...";
 const char wcWifiResetHotspot[] = "Neustart. Verbinde mit dem Hotspot <strong>OctoGlance</strong>.";
-const char wcSaved[]            = "&#10003; Einstellungen gespeichert.";
+const char wcSaved[]            = "&#10003; Einstellungen aktualisiert und gespeichert.";  // popup after Update
+const char wcOkBtn[]            = "OK";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; OctoPrint wurde unter dieser Adresse nicht gefunden - IP und Port prüfen.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint gefunden, aber der API-Schlüssel wurde abgelehnt - siehe Einstellungen &rarr; Application Keys.";
 
@@ -208,6 +225,10 @@ const char wcNtfyTopic[]        = "Thema";
 const char wcNtfyToken[]        = "Token (optional)";
 const char wcNtfyStallMin[]     = "Stillstandszeit (Minuten)";
 const char wcNtfyPort[]         = "Port (Lokaler Host)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Zeitzone manuell";
+const char wcTzReceived[]       = "Empfangen";  // as in "Received: UTC−8"
 
 #endif // LANG_DE
 
@@ -252,6 +273,8 @@ const char wcPrinterIP[]        = "IP impresora";
 const char wcPrinterPort[]      = "Puerto impresora";
 const char wcApiKey[]           = "Clave API";
 const char wcClock24[]          = "Reloj de 24 horas";
+const char wcInvert[]           = "Invertir colores";
+const char wcInvertHint[]       = "Corrección de inversión de color";
 const char wcSaveBtn[]          = "Guardar";
 const char wcWifiResetBtn[]     = "&#x26A0; Restablecer WiFi";
 const char wcWifiResetTitle[]   = "&#x26A0; Restablecer WiFi?";
@@ -260,7 +283,8 @@ const char wcWifiResetYes[]     = "Sí, restablecer";
 const char wcWifiResetCancel[]  = "Cancelar";
 const char wcWifiResetting[]    = "Restableciendo WiFi...";
 const char wcWifiResetHotspot[] = "Reiniciando. Conéctese al hotspot <strong>OctoGlance</strong>.";
-const char wcSaved[]            = "&#10003; Configuración guardada.";
+const char wcSaved[]            = "&#10003; Configuración actualizada y guardada.";  // popup after Update
+const char wcOkBtn[]            = "Aceptar";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; No se encontró OctoPrint en esa dirección - compruebe la IP y el puerto.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; Se encontró OctoPrint, pero la clave API fue rechazada - vea Configuración &rarr; Claves de aplicación.";
 
@@ -272,6 +296,10 @@ const char wcNtfyTopic[]        = "Tema";
 const char wcNtfyToken[]        = "Token (opcional)";
 const char wcNtfyStallMin[]     = "Tiempo de espera (minutos)";
 const char wcNtfyPort[]         = "Puerto (Host local)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Zona horaria manual";
+const char wcTzReceived[]       = "Recibido";  // as in "Received: UTC−8"
 
 #endif // LANG_ES
 
@@ -316,6 +344,8 @@ const char wcPrinterIP[]        = "Printer IP";
 const char wcPrinterPort[]      = "Printer poort";
 const char wcApiKey[]           = "API-sleutel";
 const char wcClock24[]          = "24-uursklok";
+const char wcInvert[]           = "Kleuren omkeren";
+const char wcInvertHint[]       = "Correctie voor kleurinversie";
 const char wcSaveBtn[]          = "Opslaan";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi resetten";
 const char wcWifiResetTitle[]   = "&#x26A0; WiFi resetten?";
@@ -324,7 +354,8 @@ const char wcWifiResetYes[]     = "Ja, resetten";
 const char wcWifiResetCancel[]  = "Annuleren";
 const char wcWifiResetting[]    = "WiFi wordt gereset...";
 const char wcWifiResetHotspot[] = "Herstarten. Verbind met het <strong>OctoGlance</strong> hotspot.";
-const char wcSaved[]            = "&#10003; Instellingen opgeslagen.";
+const char wcSaved[]            = "&#10003; Instellingen bijgewerkt en opgeslagen.";  // popup after Update
+const char wcOkBtn[]            = "OK";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; OctoPrint niet gevonden op dat adres - controleer het IP-adres en de poort.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint gevonden, maar de API-sleutel is geweigerd - zie Instellingen &rarr; Application Keys.";
 
@@ -336,6 +367,10 @@ const char wcNtfyTopic[]        = "Onderwerp";
 const char wcNtfyToken[]        = "Token (optioneel)";
 const char wcNtfyStallMin[]     = "Wachttijd (minuten)";
 const char wcNtfyPort[]         = "Poort (Lokale host)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Tijdzone handmatig";
+const char wcTzReceived[]       = "Ontvangen";  // as in "Received: UTC−8"
 
 #endif // LANG_NL
 
@@ -380,6 +415,8 @@ const char wcPrinterIP[]        = "IP da impressora";
 const char wcPrinterPort[]      = "Porta da impressora";
 const char wcApiKey[]           = "Chave API";
 const char wcClock24[]          = "Relógio 24h";
+const char wcInvert[]           = "Inverter cores";
+const char wcInvertHint[]       = "Correção de inversão de cores";
 const char wcSaveBtn[]          = "Salvar";
 const char wcWifiResetBtn[]     = "&#x26A0; Redefinir WiFi";
 const char wcWifiResetTitle[]   = "&#x26A0; Redefinir WiFi?";
@@ -388,7 +425,8 @@ const char wcWifiResetYes[]     = "Sim, redefinir";
 const char wcWifiResetCancel[]  = "Cancelar";
 const char wcWifiResetting[]    = "Redefinindo WiFi...";
 const char wcWifiResetHotspot[] = "Reiniciando. Conecte-se ao hotspot <strong>OctoGlance</strong>.";
-const char wcSaved[]            = "&#10003; Configurações salvas.";
+const char wcSaved[]            = "&#10003; Configurações atualizadas e salvas.";  // popup after Update
+const char wcOkBtn[]            = "OK";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; OctoPrint não encontrado nesse endereço - verifique o IP e a porta.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint encontrado, mas a chave API foi rejeitada - veja Configurações &rarr; Application Keys.";
 
@@ -400,6 +438,10 @@ const char wcNtfyTopic[]        = "Tópico";
 const char wcNtfyToken[]        = "Token (opcional)";
 const char wcNtfyStallMin[]     = "Tempo de espera (minutos)";
 const char wcNtfyPort[]         = "Porta (Host local)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Fuso horário manual";
+const char wcTzReceived[]       = "Recebido";  // as in "Received: UTC−8"
 
 #endif // LANG_PT
 
@@ -444,6 +486,8 @@ const char wcPrinterIP[]        = "Yazici IP";
 const char wcPrinterPort[]      = "Yazici Portu";
 const char wcApiKey[]           = "API Anahtari";
 const char wcClock24[]          = "24 saat formati";
+const char wcInvert[]           = "Renkleri ters çevir";
+const char wcInvertHint[]       = "Renk ters çevirme düzeltmesi";
 const char wcSaveBtn[]          = "Kaydet";
 const char wcWifiResetBtn[]     = "&#x26A0; WiFi Sifirla";
 const char wcWifiResetTitle[]   = "&#x26A0; WiFi Sifirla?";
@@ -452,7 +496,8 @@ const char wcWifiResetYes[]     = "Evet, sifirla";
 const char wcWifiResetCancel[]  = "Iptal";
 const char wcWifiResetting[]    = "WiFi sifirlanıyor...";
 const char wcWifiResetHotspot[] = "Yeniden baslatiliyor. <strong>OctoGlance</strong> hotspotuna baglanin.";
-const char wcSaved[]            = "&#10003; Ayarlar kaydedildi.";
+const char wcSaved[]            = "&#10003; Ayarlar güncellendi ve kaydedildi.";  // popup after Update
+const char wcOkBtn[]            = "Tamam";  // closes that popup
 const char wcSaveFailedNotFound[] = "&#x26A0; O adreste OctoPrint bulunamadi - IP ve portu kontrol edin.";
 const char wcSaveFailedBadKey[]   = "&#x26A0; OctoPrint bulundu, ancak API anahtari reddedildi - Ayarlar &rarr; Application Keys kismina bakin.";
 
@@ -464,6 +509,10 @@ const char wcNtfyTopic[]        = "Konu";
 const char wcNtfyToken[]        = "Token (istege bagli)";
 const char wcNtfyStallMin[]     = "Bekleme suresi (dakika)";
 const char wcNtfyPort[]         = "Port (Yerel host)";
+
+// ── Time zone (Web UI) ───────────────────────────────────────────────────
+const char wcTzOverride[]       = "Saat dilimi elle";
+const char wcTzReceived[]       = "Alınan";  // as in "Received: UTC−8"
 
 #endif // LANG_TR
 

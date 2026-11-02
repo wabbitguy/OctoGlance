@@ -1,4 +1,4 @@
-# OctoGlance v1.1
+# OctoGlance v1.3
 ### An OctoPrint 3D Printer Monitor for the ESP32 CYD 2.8" (Cheap Yellow Display)
 
 **Wabbit Wanch Design © 2026**
@@ -19,11 +19,13 @@ OctoGlance turns a budget ESP32 CYD into a dedicated 3D printer monitor for Octo
 - Pause detection — the progress arc turns orange and "Printer Paused" message shows
 - Cancelled/failed print detection
 - Push notifications via ntfy (print complete and stall/jam alerts)
-- Automatic timezone detection via IP geolocation — no manual DST rules to configure
+- Automatic timezone detection via IP geolocation
+- manual override for when the online lookup is out of date — see [Timezone](#timezone)
+- Invert colours option for CYD panels that show black as white
 - Dark-themed web UI for configuration — no recompiling needed
 - WiFi quality indicator
 - NTP clock with 12/24 hour mode
-- Seven language support in the codebase (English, French, German, Spanish, Dutch, Portuguese, Turkish) —  see [Language Settings](#language-settings)
+- Language support (English, French, German, Spanish, Dutch, Portuguese, Turkish) —  see [Language Settings](#language-settings)
 
 ---
 
@@ -117,11 +119,13 @@ OctoGlance has a built-in web interface accessible from any browser on your loca
 | Field | Description |
 |-------|-------------|
 | Printer IP | The IP address of the computer running OctoPrint |
-| Printer Port |  **80** for OctoPi/native installs |
+| Printer Port |  **80** for OctoPi/native installs. For Docker, use the host side of the port mapping (e.g. `5001` for `5001:80`) |
 | API Key | Your OctoPrint **Application Key** from step 4 (not the Global API Key) |
 | 24 Hour Clock | Toggle between 12 and 24 hour time display |
+| Invert colours | Turn on if your CYD shows black as white — some panels need it. Takes effect as soon as you save |
+| Time Zone Override | Only needed if the clock is wrong — see [Timezone](#timezone) |
 
-Click **Update & Save**. OctoGlance will find OctoPrint and start displaying data within a few seconds.
+Click **Update & Save**. A popup confirms the settings were saved. It also tells you if OctoPrint couldn't be found at that address or the API key was rejected. Once it's connected, OctoGlance starts displaying data within a few seconds.
 
 OctoGlance polls OctoPrint every 10 seconds to update its display, so there can be a short delay between something happening on the printer and it showing up on screen.
 
@@ -174,13 +178,21 @@ Recompile and flash after changing the language.
 
 OctoGlance detects your timezone automatically using IP-based geolocation — there's no DST rule to hand-edit like some sibling projects require. It checks once at boot and again daily at 2am local time, and re-checks are only written to flash if the offset actually changed.
 
-If your network setup makes IP geolocation unreliable (e.g. a VPN), you can hardcode a starting offset in `Settings.h`:
+### Time Zone Override
 
-```cpp
-int32_t tzOffset = -25200;  // seconds east of UTC — this example is UTC-7 (PDT)
-```
+The automatic lookup is only as current as the online service behind it. When a region changes its time rules, those services can take a while to catch up. For example, British Columbia moved to permanent UTC-7 and Alberta to permanent UTC-6 on November 1, 2026, but the lookups kept returning the old offsets, which put the clock an hour out.
 
-Note that without a DST rule, this hardcoded value won't automatically shift for daylight saving — the IP-based check will still correct it at the next 2am refresh as long as the network allows the lookup.
+If your clock is wrong, use **Time Zone Override** in the web UI:
+
+1. The **Received** line under the dropdown shows the offset the lookup returned (e.g. `Received: UTC-8`)
+2. With the toggle off, the dropdown starts at that received offset, so the right one is usually one step up or down
+3. Pick the correct offset, turn the toggle on, and click **Update & Save**
+
+With the toggle on, OctoGlance uses your offset instead of the lookup. The Received line keeps showing what the lookup says, so you can see when the service has been fixed. Turn the toggle off to go back to automatic.
+
+The override also helps if your network makes IP geolocation unreliable (e.g. a VPN).
+
+> **Note:** The override is a fixed offset — it doesn't follow daylight saving. It's meant for places that no longer change their clocks, which is where the online services tend to be out of date. If your area still changes its clocks, leave the override off.
 
 ---
 
@@ -204,6 +216,7 @@ To add thumbnails to your slicer printer profile use this web page as a referenc
 - Check the printer IP and port in the web UI at the IP shown on the display
 - Make sure OctoPrint itself is actually running (not just the printer)
 - Try accessing `http://PRINTER_IP:PORT` from your browser — you should see OctoPrint's own web UI
+- Running OctoPrint in Docker? Use the IP of the computer running Docker (not the container's internal `172.x.x.x` address) and the host side of the port mapping — `docker ps` shows it, e.g. `0.0.0.0:5001->80/tcp` means port `5001`
 
 **OctoGlance shows "OctoPrint Online / Printer Not Connected"**
 - This means OctoPrint answered fine but hasn't connected to a printer over serial. Open OctoPrint's own web UI and check the Connection panel — this is expected if OctoPrint's own **Connect automatically** setting is off, or if the printer is simply powered down
@@ -211,6 +224,16 @@ To add thumbnails to your slicer printer profile use this web page as a referenc
 **No thumbnail preview, just a generic printing icon**
 - Install the **OctoPrint-PrusaSlicerThumbnails** plugin via OctoPrint's Plugin Manager
 - Make sure your slicer profile has GCODE thumbnail generation enabled
+- The plugin only extracts thumbnails when a file is uploaded. For files that were already on OctoPrint before the plugin was installed, re-upload them or use Settings → Slicer Thumbnails → **Scan Files**
+
+**Thumbnail is an ugly grey**
+- The thumbnail is drawn in whatever colour your slicer gives the model. In PrusaSlicer, the **Extruder Color** (Printer Settings → Extruder 1) wins over the filament colour. If it's set to white, the model comes out grey. Clear it (or set your filament's colour), then re-slice
+
+**Colours are wrong (black shows as white)**
+- Turn on **Invert colours** in the web UI and click **Update & Save**. Some CYD panels need it
+
+**Clock is an hour (or more) out**
+- The online timezone lookup may be out of date for your area — see [Time Zone Override](#time-zone-override)
 
 **API Key stopped working / never worked**
 - Make sure you generated an **Application Key** (Settings → Application Keys → "Manually generate an application key"), not the deprecated Global API Key (Settings → API) — the Global key is being removed entirely in OctoPrint 1.13.0
@@ -374,4 +397,4 @@ ntfy app is developed by [Philipp Heckel](https://github.com/binwiederhier/ntfy)
 
 ---
 
-*OctoGlance v1.1 © 2026 Wabbit Wanch Design*
+*OctoGlance v1.3 © 2026 Wabbit Wanch Design*
