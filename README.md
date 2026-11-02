@@ -112,8 +112,7 @@ http://octoglance.local
 
 OctoGlance has a built-in web interface accessible from any browser on your local network at `http://octoglance.local` or the IP address shown on the display.
 
-![Web UI Overview](images/OctoGlance_Settings.png)
-
+<img width="640" alt="octoglance_printer_settings" src="https://github.com/user-attachments/assets/32621aca-c4de-460f-8dd9-7bbef631be62" />
 
 
 | Field | Description |
@@ -180,19 +179,7 @@ OctoGlance detects your timezone automatically using IP-based geolocation — th
 
 ### Time Zone Override
 
-The automatic lookup is only as current as the online service behind it. When a region changes its time rules, those services can take a while to catch up. For example, British Columbia moved to permanent UTC-7 and Alberta to permanent UTC-6 on November 1, 2026, but the lookups kept returning the old offsets, which put the clock an hour out.
-
-If your clock is wrong, use **Time Zone Override** in the web UI:
-
-1. The **Received** line under the dropdown shows the offset the lookup returned (e.g. `Received: UTC-8`)
-2. With the toggle off, the dropdown starts at that received offset, so the right one is usually one step up or down
-3. Pick the correct offset, turn the toggle on, and click **Update & Save**
-
-With the toggle on, OctoGlance uses your offset instead of the lookup. The Received line keeps showing what the lookup says, so you can see when the service has been fixed. Turn the toggle off to go back to automatic.
-
-The override also helps if your network makes IP geolocation unreliable (e.g. a VPN).
-
-> **Note:** The override is a fixed offset — it doesn't follow daylight saving. It's meant for places that no longer change their clocks, which is where the online services tend to be out of date. If your area still changes its clocks, leave the override off.
+The automatic lookup is only as current as the online service behind it. When a region changes its time rules, those services can take a while to catch up. The TZ override is a temporary setting until the services catch up and then can be disabled.
 
 ---
 
