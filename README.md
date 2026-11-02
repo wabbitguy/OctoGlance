@@ -20,7 +20,7 @@ OctoGlance turns a budget ESP32 CYD into a dedicated 3D printer monitor for Octo
 - Cancelled/failed print detection
 - Push notifications via ntfy (print complete and stall/jam alerts)
 - Automatic timezone detection via IP geolocation
-- manual override for when the online lookup is out of date — see [Timezone](#timezone)
+- Manual override for when the online lookup is out of date — see [Timezone](#timezone)
 - Invert colours option for CYD panels that show black as white
 - Dark-themed web UI for configuration — no recompiling needed
 - WiFi quality indicator
