@@ -58,6 +58,9 @@ bool invertColours = false;  // true if black shows as white (some CYD panels ne
 // ── Screen saver ───────────────────────────────────────────
 #define SCREENSAVER_MINUTES 10 //offline mins before Matrix rain shows up
 
+// ── WiFi ───────────────────────────────────────────────────
+#define PORTAL_TIMEOUT_MINUTES 10 // idle setup AP reboots to retry saved WiFi
+
 // ---------------- GRAPHICS (in LittleFS /data folder) ----------------
 #define OFFLINE_IMAGE "/OctoOffLine.bmp"  // 24-bit BMP, 186 x 186 - OctoPrint not answering
 #define IDLE_IMAGE "/Idle.bmp"          // 24-bit BMP, 110 x 110
