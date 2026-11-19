@@ -9,9 +9,9 @@
 
 //#define FORMAT_LittleFS  // Wipe LittleFS and all files! Disable after use.
 
-#define VERSION "v1.5"
+#define VERSION "v1.6"
 #define hostNameCYD "OctoGlance"
-#define CONFIG "/config.txt"
+#define CONFIG "/config.txt"  // old settings file, read once then moved to NVS
 
 // ---------------- GAUGE IDs ----------------
 #define nozzleGauge 1
@@ -202,6 +202,7 @@ KeyTestResult testOctoPrintConnection();
 String getPrinterSetup();
 void writeSettings();
 void readSettings();
+void readSettingsFile();
 String extractFileName(const String &path, bool withExt);
 void drawFileName();
 void handleWifiReset();
@@ -1417,34 +1418,53 @@ String getPrinterSetup() {
   return printerForm;
 }
 
-void writeSettings() {
-  fs::File f = LittleFS.open(CONFIG, "w");
-  if (!f) {
-    Serial.println("Settings write failed!");
-    return;
-  }
-  f.println("printerIP=" + printerIP);
-  f.println("printerPort=" + printerPort);
-  f.println("apiKey=" + apiKey);
-  f.println("show24HR=" + String(show24HR));
-  f.println("invertColours=" + String(invertColours));
-  f.println("ntfyPort=" + ntfyPort);  // write the port number if there is one
-  f.println("ntfyEnabled=" + String(ntfyEnabled));
-  f.println("ntfyServer=" + ntfyServer);
-  f.println("ntfyTopic=" + ntfyTopic);
-  f.println("ntfyToken=" + ntfyToken);
-  f.println("ntfyStallMin=" + String(ntfyStallMin));
-  f.println("tzOffset=" + String(tzOffset));
-  f.println("tzOverride=" + String(tzOverride));
-  f.println("tzOverrideOffset=" + String(tzOverrideOffset));
-  f.close();
+void writeSettings() {  // NVS survives sketch and LittleFS uploads
+  prefs.begin("octoglance", false);
+  prefs.putString("printerIP", printerIP);
+  prefs.putString("printerPort", printerPort);
+  prefs.putString("apiKey", apiKey);
+  prefs.putBool("show24HR", show24HR);
+  prefs.putBool("invertColours", invertColours);
+  prefs.putString("ntfyPort", ntfyPort);
+  prefs.putBool("ntfyEnabled", ntfyEnabled);
+  prefs.putString("ntfyServer", ntfyServer);
+  prefs.putString("ntfyTopic", ntfyTopic);
+  prefs.putString("ntfyToken", ntfyToken);
+  prefs.putUChar("ntfyStallMin", ntfyStallMin);
+  prefs.putInt("tzOffset", tzOffset);
+  prefs.putBool("tzOverride", tzOverride);
+  prefs.putInt("tzOvrOffset", tzOverrideOffset);  // NVS keys max 15 chars
+  prefs.end();
 }
 
 void readSettings() {
-  if (!LittleFS.exists(CONFIG)) {
-    writeSettings();
-    return;
+  prefs.begin("octoglance", true);
+  bool saved = prefs.isKey("printerIP");
+  if (saved) {
+    printerIP = prefs.getString("printerIP", printerIP);
+    printerPort = prefs.getString("printerPort", printerPort);
+    apiKey = prefs.getString("apiKey", apiKey);
+    show24HR = prefs.getBool("show24HR", show24HR);
+    invertColours = prefs.getBool("invertColours", invertColours);
+    ntfyPort = prefs.getString("ntfyPort", ntfyPort);
+    ntfyEnabled = prefs.getBool("ntfyEnabled", ntfyEnabled);
+    ntfyServer = prefs.getString("ntfyServer", ntfyServer);
+    ntfyTopic = prefs.getString("ntfyTopic", ntfyTopic);
+    ntfyToken = prefs.getString("ntfyToken", ntfyToken);
+    ntfyStallMin = prefs.getUChar("ntfyStallMin", ntfyStallMin);
+    tzOffset = prefs.getInt("tzOffset", tzOffset);
+    tzOverride = prefs.getBool("tzOverride", tzOverride);
+    tzOverrideOffset = prefs.getInt("tzOvrOffset", tzOverrideOffset);
   }
+  prefs.end();
+  if (!saved) {  // first boot: bring over the old LittleFS settings, if any
+    readSettingsFile();
+    writeSettings();
+  }
+}
+
+void readSettingsFile() {  // pre-NVS settings in LittleFS
+  if (!LittleFS.exists(CONFIG)) return;
   fs::File fr = LittleFS.open(CONFIG, "r");
   String line;
   while (fr.available()) {

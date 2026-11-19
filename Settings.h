@@ -27,6 +27,7 @@
 #include <FS.h>
 #include "LittleFS.h"
 #include <WebServer.h>
+#include <Preferences.h>
 #include <PNGdec.h>
 
 int32_t tzOffset = -25200;// -25200 = UTC-7 (PDT).  Updated automatically at 2am and on web save.
@@ -53,6 +54,7 @@ String printerJOB = "/api/job";        // progress / ETA / active file
 String thePrintFile = "";  // filename of the currently printing file
 
 bool show24HR = false;// show 24hr clock
+Preferences prefs;  // settings in NVS
 bool invertColours = false;  // true if black shows as white (some CYD panels need it)
 
 // ── Screen saver ───────────────────────────────────────────
